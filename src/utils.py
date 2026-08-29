@@ -13,7 +13,7 @@ def load_grayscale_image(path):
     # Read the image as grayscale
     image = io.imread(path, as_gray=True)
 
-    # Convert pixel values to the range 0 to 1
+    # Convert pixel values to the range [0, 1]
     return img_as_float(image)
 
 
@@ -37,6 +37,7 @@ def show_images(images, titles, save_path=None):
         plt.imshow(images[i], cmap="gray", vmin=0, vmax=1)
         plt.title(titles[i])
         plt.axis("off")
+        # plt.colorbar(label="", orientation="vertical")
 
     plt.tight_layout()
 

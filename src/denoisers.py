@@ -1,9 +1,14 @@
 import numpy as np
-from skimage.restoration import denoise_bilateral
+
+from skimage.restoration import (
+    denoise_bilateral,
+    denoise_nl_means,
+    denoise_tv_chambolle
+)
 
 
-def anisotropic_denoise(image, n_iter, kappa, gamma,
-                        conduction="exponential"):
+def anisotropic_denoise(image, n_iter, kappa, gamma, conduction):
+
     # Convert the image to float
     denoised_image = image.astype(np.float32).copy()
 
@@ -14,10 +19,18 @@ def anisotropic_denoise(image, n_iter, kappa, gamma,
         east = np.zeros_like(denoised_image)
         west = np.zeros_like(denoised_image)
 
-        north[:-1, :] = denoised_image[1:, :] - denoised_image[:-1, :]
-        south[1:, :] = denoised_image[:-1, :] - denoised_image[1:, :]
-        east[:, :-1] = denoised_image[:, 1:] - denoised_image[:, :-1]
-        west[:, 1:] = denoised_image[:, :-1] - denoised_image[:, 1:]
+        north[:-1, :] = (
+            denoised_image[1:, :] - denoised_image[:-1, :]
+        )
+        south[1:, :] = (
+            denoised_image[:-1, :] - denoised_image[1:, :]
+        )
+        east[:, :-1] = (
+            denoised_image[:, 1:] - denoised_image[:, :-1]
+        )
+        west[:, 1:] = (
+            denoised_image[:, :-1] - denoised_image[:, 1:]
+        )
 
         # Calculate conduction coefficients
         if conduction == "exponential":
@@ -45,15 +58,47 @@ def anisotropic_denoise(image, n_iter, kappa, gamma,
             + c_west * west
         )
 
-    return np.clip(denoised_image, 0, 1)
+    # Calculate the average conduction coefficient
+    c_total = (c_north + c_south + c_east + c_west) / 4
+
+    return denoised_image, c_total
+
+
+def total_variation_denoise(image, weight):
+
+    # Apply total variation denoising
+    denoised_image = denoise_tv_chambolle(
+        image,
+        weight=weight,
+        channel_axis=None
+    )
+
+    return denoised_image
 
 
 def bilateral_denoise(image, sigma_color, sigma_spatial):
+
     # Apply bilateral filtering
     denoised_image = denoise_bilateral(
         image,
         sigma_color=sigma_color,
         sigma_spatial=sigma_spatial,
+        channel_axis=None
+    )
+
+    return denoised_image
+
+
+def non_local_means_denoise(image, h, patch_size, patch_distance):
+
+    # Apply non-local means denoising
+    denoised_image = denoise_nl_means(
+        image,
+        h=h,
+        patch_size=patch_size,
+        patch_distance=patch_distance,
+        fast_mode=True,
+        preserve_range=True,
         channel_axis=None
     )
 
